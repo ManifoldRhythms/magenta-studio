@@ -16,12 +16,20 @@
  */
 
 const packager = require('electron-packager')
-const { resolve, basename, dirname } = require('path')
+const {
+	resolve,
+	basename,
+	dirname
+} = require('path')
 const glob = require('glob-promise')
 const fs = require('fs-extra')
-const { promisify } = require('util')
+const {
+	promisify
+} = require('util')
 const exec = promisify(require('child_process').exec)
-const { spawn } = require('child_process')
+const {
+	spawn
+} = require('child_process')
 const colors = require('colors')
 const package = require('../package.json')
 
@@ -29,9 +37,16 @@ const package = require('../package.json')
 // const platform = ['darwin', 'win32']
 // const platform = ['darwin']
 
-async function main(){
+/**
+ * 
+ * @param {BuildOptions} options 
+ */
+async function main(options) {
 
-	const { name, version } = package
+	const {
+		name,
+		version
+	} = package
 	const outName = `${name}-${version}`
 
 	console.log(outName.magenta)
@@ -59,71 +74,77 @@ async function main(){
 	/**
 	 * STANDALONE
 	 */
-	console.log('BUILDING STANDALONE'.green)
-	await runNpm('webpack:standalone')
+	if (options.standalone) {
+		console.log('BUILDING STANDALONE'.green)
+		await runNpm('webpack:standalone')
 
-	console.log('\n')
+		console.log('\n')
 
-	console.log('BUNDLE STANDALONE'.green)
-	const standaloneOut = resolve(__dirname, '../dist', `${outName}-standalone-${platform}`)
-	await output(platform, 'magenta_logo', buildDir)
-	// await moveFiles(buildDir, standaloneOut)
+		console.log('BUNDLE STANDALONE'.green)
+		const standaloneOut = resolve(__dirname, '../dist', `${outName}-standalone-${platform}`)
+		await output(platform, 'magenta_logo', buildDir)
+		// await moveFiles(buildDir, standaloneOut)
+	} else {
+		console.log('BUILDING STANDALONE (skip)'.yellow.bold)
+		console.log('\n')
+		console.log('BUNDLE STANDALONE (skip)'.yellow.bold)
+	}
 
 	console.log('COMPRESSSSSS'.green)
 	//compress the max dir
-	await toBeSigned()
+	await toBeSigned(options)
 }
 
-async function runNpm(command){
+async function runNpm(command) {
 	process.chdir(resolve(__dirname, '../'));
 	const child = spawn('npm', ['run', command])
 	child.stdout.on('data', d => console.log(d.toString().gray))
 	return new Promise(done => child.stdout.on('close', () => done()))
 }
 
-async function output(platform, icon, out){
+async function output(platform, icon, out) {
 
 	const nameToPlatform = {
-		'windows' : 'win32',
-		'macOS' : 'darwin'
+		'windows': 'win32',
+		'macOS': 'darwin'
 	}
 
 	const config = {
-		overwrite : true,
-		arch : 'x64',
-		platform : nameToPlatform[platform],
-		prune : true,
+		overwrite: true,
+		arch: 'x64',
+		platform: nameToPlatform[platform],
+		prune: true,
 		out,
-		osxSign : false,
+		osxSign: false,
 	}
 	try {
 		await packager(Object.assign({}, config, {
-			dir : resolve(__dirname, '../continue'),
-			name : 'Continue',
-			icon : resolve(__dirname, './assets/Continue_icon'),
+			dir: resolve(__dirname, '../continue'),
+			name: 'Continue',
+			icon: resolve(__dirname, './assets/Continue_icon'),
 		}))
 		await packager(Object.assign({}, config, {
-			dir : resolve(__dirname, '../groovae'),
-			name : 'GrooVAE',
-			icon : resolve(__dirname, './assets/GrooVAE_icon'),
+			dir: resolve(__dirname, '../groovae'),
+			name: 'GrooVAE',
+			icon: resolve(__dirname, './assets/GrooVAE_icon'),
 		}))
 		await packager(Object.assign({}, config, {
-			dir : resolve(__dirname, '../interpolate'),
-			name : 'Interpolate',
-			icon : resolve(__dirname, './assets/Interpolate_icon'),
+			dir: resolve(__dirname, '../interpolate'),
+			name: 'Interpolate',
+			icon: resolve(__dirname, './assets/Interpolate_icon'),
 		}))
 		await packager(Object.assign({}, config, {
-			dir : resolve(__dirname, '../generate'),
-			name : 'Generate',
-			icon : resolve(__dirname, './assets/Generate_icon'),
+			dir: resolve(__dirname, '../generate'),
+			name: 'Generate',
+			icon: resolve(__dirname, './assets/Generate_icon'),
 		}))
-	} catch (e){
+	} catch (e) {
 		console.log(e)
 	}
 }
 
 
-async function moveFiles(buildDir, outDir){
+async function moveFiles(buildDir, outDir) {
 	await fs.remove(outDir)
 	await fs.ensureDir(outDir)
 	const match = resolve(buildDir, './*/*.app')
@@ -136,23 +157,44 @@ async function moveFiles(buildDir, outDir){
 	await fs.remove(buildDir)
 }
 
-async function toBeSigned(){
+/**
+ * 
+ * @param {BuildOptions} options 
+ */
+async function toBeSigned(options) {
 	const outDir = resolve(__dirname, `../dist/to-sign-${package.version}`)
-	if (await fs.exists(outDir)){
+	if (await fs.exists(outDir)) {
 		await fs.remove(outDir)
 	}
 	await fs.ensureDir(outDir)
-	const standaloneApps = await glob(resolve(__dirname, '../dist/*/*.app'))
+
+
+	if (options.standalone) {
+		const standaloneApps = await glob(resolve(__dirname, '../dist/*/*.app'))
+		await Promise.all(standaloneApps.map(a => fs.copy(a, resolve(outDir, 'standalone', basename(a)))))
+		//get all of the files in the standalone
+		await compressAndDelete(outDir, 'standalone')
+	}
+
 	const abletonApps = await glob(resolve(__dirname, '../dist/*/.apps/*.app'))
-	await Promise.all(standaloneApps.map(a => fs.copy(a, resolve(outDir, 'standalone', basename(a)))))
+
 	await Promise.all(abletonApps.map(a => fs.copy(a, resolve(outDir, 'ableton', basename(a)))))
-	//get all of the files in the standalone
-	await compressAndDelete(outDir, 'standalone')
+
 	await compressAndDelete(outDir, 'ableton')
 }
 
-async function compressAndDelete(outDir, type){
+async function compressAndDelete(outDir, type) {
+
+	console.log();
+	console.log(`outDir ${outDir} type ${type}`);
+	console.log();
+
 	const appDir = resolve(outDir, type)
+
+	console.log();
+	console.log(`appDir ${appDir}`);
+	console.log();
+
 	process.chdir(appDir)
 	const appFiles = await glob(resolve(appDir, '*.app'))
 	await Promise.all(appFiles.map(appFile => {
@@ -163,5 +205,35 @@ async function compressAndDelete(outDir, type){
 	await Promise.all(appFiles.map(f => fs.remove(f)))
 }
 
-main()
+/**
+ * 
+ * @param {any[]} [argv=[]] 
+ * @returns {BuildOptions}
+ */
+function processArgs(argv = []) {
+	const args = argv.slice(2).map(v => v.replace(/-/g, ''));
+	const options = {
+		standalone: true,
+		ableton: true
+	};
+
+	if (args.find(v => v === 'nostandalone')) {
+		options.standalone = false;
+	}
+
+	if (args.find(v => v === 'noableton')) {
+		options.ableton = false;
+	}
+
+	return options;
+}
+
+main(processArgs(process.argv))
 // toBeSigned()
+
+
+/**
+ * @typedef {Object} BuildOptions
+ * @property {boolean} standalone
+ * @property {boolean} ableton
+ */

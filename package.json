@@ -6,6 +6,8 @@
   "scripts": {
     "watch": "webpack -w --env.all --mode=development",
     "webpack:build": "webpack -p --env.all --mode=production --env.production && npm run copy",
+    "clean": "npx rimraf build dist",
+    "prebuild": "npm run clean",
     "build": "node electron/build.js",
     "build:old": "npm run webpack:build && npm run electron:build",
     "watch:components": "webpack -w --env.components --mode=development",
