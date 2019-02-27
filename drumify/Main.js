@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,13 @@ async function generate(){
 	// const variations = document.querySelector('#variations').value
 	try {
 		const inputMidi = await document.querySelector('magenta-midi-file').read()
-		const output = await model.unquantize(inputMidi, temp)
-		await document.querySelector('magenta-midi-file').write([output], 'GROOVAE')
+		const output = await model.drumify(inputMidi, temp)
+		await document.querySelector('magenta-midi-file').write([output], 'DRUMIFY')
 	} catch (e){
 		const snackbar = document.createElement('magenta-snackbar')
 		snackbar.setAttribute('message', e)
-		snackbar.setAttribute('error', '')			
-		snackbar.setAttribute('whoops', '')			
+		snackbar.setAttribute('error', '')
+		snackbar.setAttribute('whoops', '')
 		document.body.appendChild(snackbar)
 		setStatus('')
 		throw e
@@ -63,29 +63,26 @@ function validate(){
 	return valid
 }
 
-// <magenta-slider id="temperature" value="1" min="0" max="2" step="0.1" label="Temperature"></magenta-slider>
-// <magenta-slider id="variations" value="4" min="1" max="8" label="Variations"></magenta-slider>
-
 render(html`
 	<magenta-close-button></magenta-close-button>
-	<div id="title">
-		<span>G</span>
-		<span>R</span>
-		<span>O</span>
-		<span>O</span>
-		<span>V</span>
-		<span>A</span>
-		<span>E</span>
+	<div id="title" class="${ANIMATE ? 'animate' : ''}">
+    <span>D</span>
+    <span>R</span>
+    <span>U</span>
+    <span>M</span>
+    <span>I</span>
+    <span>F</span>
+    <span>Y</span>
 	</div>
 	<magenta-radio-group
 		values=${JSON.stringify(['drums'])}
 		id="mode">
 	</magenta-radio-group>
 	<div id="controls">
-		<magenta-midi-file 
+		<magenta-midi-file
 			label="Input ${ABLETON ? 'Clip' : 'File'}"
 			@change=${validate}></magenta-midi-file>
-		
+
 	</div>
 	<magenta-output-text></magenta-output-text>
 	<magenta-slider id="temperature" value="1" min="0" max="2" step="0.1" label="Temperature"></magenta-slider>

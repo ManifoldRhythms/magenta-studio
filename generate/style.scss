@@ -83,7 +83,24 @@ $shadowCount : 6;
 	text-shadow: $outp
 }
 
+@keyframes hover-animation {
+	0% {
+		@include shadow(0px);
+	}
+
+	50% {
+		@include shadow(16px);
+	}
+
+	100% {
+		@include shadow(0px);
+	}
+}
+
 #title {
+  -webkit-app-region: no-drag;
+  user-select: none;
+
 	span {
 		position: relative;
 		pointer-events: none;
@@ -92,7 +109,11 @@ $shadowCount : 6;
 	}
 
 	&:hover span {
-		@include shadow(16px);	
+		@include shadow(16px);
+	}
+
+	&.animate span {
+		animation: hover-animation 0.8s infinite;
 	}
 
 }

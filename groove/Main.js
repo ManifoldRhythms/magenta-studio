@@ -19,34 +19,28 @@ import { render, html } from 'lit-html'
 import { Model } from './Model'
 import './style.scss'
 
-const models = {
-	drums : new Model(true),
-	melody : new Model(false),
-}
+const model = new Model()
 
-const initialized = Promise.all([models.drums.load(), models.melody.load()])
-initialized.then(() => {
+model.load().then(() => {
 	setStatus('')
 })
 
 async function generate(){
-
 	if (!validate()){
 		return
 	}
 	setStatus('Generating...')
 	//get all the attributes
-	const mode = document.querySelector('#mode').value
-	const steps = document.querySelector('#variations').value
 	const temp = document.querySelector('#temperature').value
+	// const variations = document.querySelector('#variations').value
 	try {
-		const [inputMidiA, inputMidiB] = await document.querySelector('magenta-midi-file').read()
-		const output = await models[mode].predict(inputMidiA, inputMidiB, steps, temp)
-		await document.querySelector('magenta-midi-file').write(output, 'INTERPOLATE')
+		const inputMidi = await document.querySelector('magenta-midi-file').read()
+		const output = await model.unquantize(inputMidi, temp)
+		await document.querySelector('magenta-midi-file').write([output], 'GROOVE')
 	} catch (e){
 		const snackbar = document.createElement('magenta-snackbar')
 		snackbar.setAttribute('message', e)
-		snackbar.setAttribute('error', '')			
+		snackbar.setAttribute('error', '')
 		snackbar.setAttribute('whoops', '')
 		document.body.appendChild(snackbar)
 		setStatus('')
@@ -69,32 +63,32 @@ function validate(){
 	return valid
 }
 
+// <magenta-slider id="temperature" value="1" min="0" max="2" step="0.1" label="Temperature"></magenta-slider>
+// <magenta-slider id="variations" value="4" min="1" max="8" label="Variations"></magenta-slider>
+
 render(html`
 	<magenta-close-button></magenta-close-button>
-	<div id="title">
-		<span>I</span>
-		<span class="expand">N</span>
-		<span class="expand">T</span>
-		<span class="expand">E</span>
-		<span class="expand">R</span>
-		<span class="expand">P</span>
-		<span class="expand">O</span>
-		<span class="expand">L</span>
-		<span class="expand">A</span>
-		<span>T</span>
+	<div id="title" class="${ANIMATE ? 'animate' : ''}">
+		<span>G</span>
+		<span>R</span>
+		<span>O</span>
+		<span>O</span>
+		<span>V</span>
 		<span>E</span>
 	</div>
+	<magenta-radio-group
+		values=${JSON.stringify(['drums'])}
+		id="mode">
+	</magenta-radio-group>
 	<div id="controls">
-		<magenta-radio-group
-				values=${JSON.stringify(['drums', 'melody'])}
-				id="mode">
-			</magenta-radio-group>
-		<magenta-midi-file label="Input ${ABLETON ? 'Clips' : 'Files'}" @change=${validate} inputs="2"></magenta-midi-file>
-		<magenta-slider id="variations" value="3" min="1" max="16" label="Steps"></magenta-slider>
-		<magenta-slider id="temperature" value="1" min="0" max="2" step="0.1" label="Temperature"></magenta-slider>
+		<magenta-midi-file
+			label="Input ${ABLETON ? 'Clip' : 'File'}"
+			@change=${validate}></magenta-midi-file>
+
 	</div>
 	<magenta-output-text></magenta-output-text>
-	<magenta-button id="generate" label="Initializing..." disabled @click=${generate}></magenta-button>
+	<magenta-slider id="temperature" value="1" min="0" max="2" step="0.1" label="Temperature"></magenta-slider>
+	<magenta-button disabled id="generate" label="Initializing..." @click=${generate}></magenta-button>
 `, document.body)
 
 function setStatus(status, error=false){
@@ -107,16 +101,5 @@ function setStatus(status, error=false){
 		element.setAttribute('label', status)
 		controls.classList.add('generating')
 	}
-}
-
-if (ANIMATE){
-	//title animation
-	setInterval(() => {
-		if (document.querySelector('#title').classList.contains('hover')){
-			document.querySelector('#title').classList.remove('hover')
-		} else {
-			document.querySelector('#title').classList.add('hover')
-		}
-	}, 500)
 }
 

@@ -22,7 +22,7 @@ import './Tabs'
 import './Ableton'
 import { commonStyle } from './InputStyle'
 
-class Keyline extends LitElement {
+class CloseButton extends LitElement {
 
 	render(){
 		const closeButton = html`
@@ -64,11 +64,7 @@ class Keyline extends LitElement {
 				</svg>
 			</button>
 		`
-		if (ABLETON || process.platform === 'win32'){
-			return closeButton
-		} else {
-			return html``
-		}
+    return closeButton
 	}
 }
-customElements.define('magenta-close-button', Keyline)
+customElements.define('magenta-close-button', CloseButton)

@@ -16,33 +16,34 @@
  */
 
 const max = require('max-api')
-const { spawn, fork } = require('child_process')
-const kill = require('tree-kill')
 const opn = require('opn')
-const apps = ['continue', 'interpolate', 'groovae', 'generate']
-const os = require('os')
 const fs = require('fs-extra')
 const { resolve } = require('path')
 
-const appNames = ['continue', 'interpolate', 'generate', 'groovae']
+const appNames = ['continue', 'interpolate', 'generate', 'groove', 'drumify']
 
 max.addHandler('open', async app => {
 
 	if (appNames.includes(app)){
-		const appDir = resolve(__dirname, '../.apps')
+		const appDir = resolve(__dirname, '../apps')
 		const apps = await fs.readdir(appDir)
 		const executable = apps.find(a => a.toLowerCase().includes(app))
 
-		const executablePath = resolve(appDir, executable)
+		let executablePath = resolve(appDir, executable)
 
-		opn(executablePath).then(() => {
-			max.outlet(app, 0)
-		})
+		//for windows, there's an exe inside the dir with the same name
+		if (await fs.exists(resolve(executablePath, `${executable}.exe`))){
+			executablePath = resolve(executablePath, `${executable}.exe`)
+		}
+
+		await opn(executablePath)
+		//resolves when the app is closed
+		max.outlet(app, 0)
 	}
 })
 
-max.addHandler('close', app => {
+/* max.addHandler('close', app => {
 
-})
+}) */
 
 appNames.forEach(a => max.outlet(a, 0))
